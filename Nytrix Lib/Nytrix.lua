@@ -28,6 +28,61 @@ local currentTabInstance = nil
 local tabIndex = 0
 local unloaded = false
 
+
+
+-- Mobile detection
+local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local mobileUIEnabled = false
+local serverStartTime = os.time()
+
+-- Whitelist System Configuration
+local WhitelistSystem = {
+    -- Game-specific group ID (change this to your game's group ID)
+    GroupId = 1234567, -- REPLACE WITH YOUR ACTUAL GROUP ID
+    
+    -- Role definitions with minimum rank requirements
+    Roles = {
+        OWNER = 255,
+        ADMIN = 254,
+        MODERATOR = 253,
+        PREMIUM = 100,
+        MEMBER = 1,
+        GUEST = 0
+    },
+    
+    -- Blacklisted user IDs (users who are permanently banned)
+    Blacklisted = {
+        111111111, -- Example blacklisted user ID
+        222222222,
+        333333333
+    },
+    
+    -- Whitelisted user IDs (users with special access regardless of rank)
+    Whitelisted = {
+        444444444, -- Example whitelisted user ID
+        555555555
+    },
+    
+    -- Key system configuration
+    KeySystem = {
+        Enabled = true,
+        KeyExpiryTime = 24 * 60 * 60, -- 24 hours in seconds
+        ValidKeys = {
+            "NYTRIX-PREMIUM-2024",
+            "VIP-ACCESS-CODE",
+            "SPECIAL-KEY-123"
+        }
+    }
+}
+
+-- Player data storage
+local playerRoles = {}
+local playerKeys = {}
+local keyActivationTime = {}
+
+
+
+
 local assets = {
 	interFont = "rbxassetid://12187365364",
 	userInfoBlurred = "rbxassetid://18824089198",
@@ -47,6 +102,158 @@ local assets = {
 
 --// Functions
 local function GetGui()
+	-- Function to get player's role based on group rank
+local function GetPlayerRole(player)
+    local userId = player.UserId
+    
+    -- Check if blacklisted
+    if table.find(WhitelistSystem.Blacklisted, userId) then
+        return "BLACKLISTED"
+    end
+    
+    -- Check if whitelisted (overrides group rank)
+    if table.find(WhitelistSystem.Whitelisted, userId) then
+        return "WHITELISTED"
+    end
+    
+    -- Check group rank
+    local success, rank = pcall(function()
+        return player:GetRankInGroup(WhitelistSystem.GroupId)
+    end)
+    
+    if success then
+        if rank >= WhitelistSystem.Roles.OWNER then
+            return "OWNER"
+        elseif rank >= WhitelistSystem.Roles.ADMIN then
+            return "ADMIN"
+        elseif rank >= WhitelistSystem.Roles.MODERATOR then
+            return "MODERATOR"
+        elseif rank >= WhitelistSystem.Roles.PREMIUM then
+            return "PREMIUM"
+        elseif rank >= WhitelistSystem.Roles.MEMBER then
+            return "MEMBER"
+        else
+            return "GUEST"
+        end
+    end
+    
+    return "GUEST" -- Default if not in group or error
+end
+
+-- Function to check if player has valid key
+local function HasValidKey(player)
+    if not WhitelistSystem.KeySystem.Enabled then
+        return true
+    end
+    
+    local userId = player.UserId
+    local keyData = playerKeys[userId]
+    
+    if not keyData then
+        return false
+    end
+    
+    -- Check if key has expired
+    if keyActivationTime[userId] then
+        local timeElapsed = os.time() - keyActivationTime[userId]
+        if timeElapsed > WhitelistSystem.KeySystem.KeyExpiryTime then
+            playerKeys[userId] = nil
+            keyActivationTime[userId] = nil
+            return false
+        end
+    end
+    
+    return table.find(WhitelistSystem.KeySystem.ValidKeys, keyData)
+end
+
+-- Function to get remaining key time
+local function GetKeyTimeRemaining(player)
+    if not WhitelistSystem.KeySystem.Enabled or not keyActivationTime[player.UserId] then
+        return 0
+    end
+    
+    local timeElapsed = os.time() - keyActivationTime[player.UserId]
+    local timeRemaining = WhitelistSystem.KeySystem.KeyExpiryTime - timeElapsed
+    
+    return math.max(0, timeRemaining)
+end
+
+-- Function to format time for display
+local function FormatTime(seconds)
+    if seconds <= 0 then
+        return "Expired"
+    end
+    
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    
+    if hours > 0 then
+        return string.format("%02d:%02d:%02d", hours, minutes, secs)
+    else
+        return string.format("%02d:%02d", minutes, secs)
+    end
+end
+
+-- Function to activate a key for player
+local function ActivateKey(player, key)
+    if not WhitelistSystem.KeySystem.Enabled then
+        return false, "Key system is disabled"
+    end
+    
+    if not table.find(WhitelistSystem.KeySystem.ValidKeys, key) then
+        return false, "Invalid key"
+    end
+    
+    local userId = player.UserId
+    playerKeys[userId] = key
+    keyActivationTime[userId] = os.time()
+    
+    return true, "Key activated successfully!"
+end
+
+-- Function to get player's access level for UI display
+local function GetPlayerAccessLevel(player)
+    local role = GetPlayerRole(player)
+    local hasKey = HasValidKey(player)
+    local keyTime = GetKeyTimeRemaining(player)
+    
+    if role == "BLACKLISTED" then
+        return "BLACKLISTED", "Permanently Banned", Color3.fromRGB(255, 0, 0)
+    elseif role == "WHITELISTED" then
+        return "WHITELISTED", "Special Access", Color3.fromRGB(0, 255, 255)
+    elseif role == "OWNER" then
+        return "OWNER", "Game Owner", Color3.fromRGB(255, 215, 0)
+    elseif role == "ADMIN" then
+        return "ADMIN", "Administrator", Color3.fromRGB(255, 50, 50)
+    elseif role == "MODERATOR" then
+        return "MODERATOR", "Moderator", Color3.fromRGB(50, 150, 255)
+    elseif role == "PREMIUM" then
+        return "PREMIUM", "Premium Member", Color3.fromRGB(255, 165, 0)
+    elseif hasKey then
+        return "KEY_USER", "Key: " .. FormatTime(keyTime), Color3.fromRGB(0, 255, 0)
+    elseif role == "MEMBER" then
+        return "MEMBER", "Group Member", Color3.fromRGB(100, 200, 255)
+    else
+        return "GUEST", "Guest", Color3.fromRGB(150, 150, 150)
+    end
+end
+
+-- Function to check if player can access features
+local function CanAccessFeatures(player)
+    local role = GetPlayerRole(player)
+    local hasKey = HasValidKey(player)
+    
+    if role == "BLACKLISTED" then
+        return false, "You are blacklisted from using this script."
+    elseif role == "WHITELISTED" or role == "OWNER" or role == "ADMIN" or role == "MODERATOR" or role == "PREMIUM" then
+        return true, "Access granted via role."
+    elseif hasKey then
+        return true, "Access granted via key."
+    else
+        return false, "You need a premium role or valid key to access features."
+    end
+end
 	local newGui = Instance.new("ScreenGui")
 	newGui.ScreenInsets = Enum.ScreenInsets.None
 	newGui.ResetOnSpawn = false
@@ -68,7 +275,79 @@ end
 
 --// Library Functions
 function Nytrix:Window(Settings)
-	local WindowFunctions = {Settings = Settings}
+    -- Check if player can access features
+    local canAccess, accessMessage = CanAccessFeatures(LocalPlayer)
+    if not canAccess then
+        -- Create a simple notification for restricted access
+        local accessGui = GetGui()
+        local notification = Instance.new("Frame")
+        notification.Name = "AccessDenied"
+        notification.AnchorPoint = Vector2.new(0.5, 0.5)
+        notification.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        notification.BorderSizePixel = 0
+        notification.Position = UDim2.fromScale(0.5, 0.5)
+        notification.Size = UDim2.fromOffset(300, 150)
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 10)
+        corner.Parent = notification
+        
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(255, 0, 0)
+        stroke.Thickness = 2
+        stroke.Parent = notification
+        
+        local title = Instance.new("TextLabel")
+        title.Text = "ACCESS DENIED"
+        title.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+        title.TextColor3 = Color3.fromRGB(255, 50, 50)
+        title.TextSize = 18
+        title.BackgroundTransparency = 1
+        title.Size = UDim2.new(1, 0, 0, 40)
+        title.Position = UDim2.fromScale(0, 0)
+        title.Parent = notification
+        
+        local message = Instance.new("TextLabel")
+        message.Text = accessMessage
+        message.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+        message.TextColor3 = Color3.fromRGB(255, 255, 255)
+        message.TextSize = 14
+        message.BackgroundTransparency = 1
+        message.Size = UDim2.new(1, -20, 0, 60)
+        message.Position = UDim2.fromScale(0, 0.3)
+        message.TextWrapped = true
+        message.Parent = notification
+        
+        local role, displayText, color = GetPlayerAccessLevel(LocalPlayer)
+        local roleLabel = Instance.new("TextLabel")
+        roleLabel.Text = "Your Status: " .. displayText
+        roleLabel.FontFace = Font.new("rbxassetid://12187365364", Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+        roleLabel.TextColor3 = color
+        roleLabel.TextSize = 12
+        roleLabel.BackgroundTransparency = 1
+        roleLabel.Size = UDim2.new(1, -20, 0, 30)
+        roleLabel.Position = UDim2.fromScale(0, 0.7)
+        roleLabel.Parent = notification
+        
+        notification.Parent = accessGui
+        
+        return {
+            Unload = function() accessGui:Destroy() end,
+            Notify = function() end,
+            SetState = function() end
+        }
+    end
+
+    local WindowFunctions = {Settings = Settings}
+    
+    -- Mobile detection and UI scaling
+    if isMobile then
+        mobileUIEnabled = true
+        Settings.Size = Settings.Size or UDim2.fromOffset(350, 500) -- Smaller for mobile
+        Settings.DragStyle = 2 -- Full frame drag for mobile
+    else
+        Settings.Size = Settings.Size or UDim2.fromOffset(868, 650) -- Original size for desktop
+    end
 	if Settings.AcrylicBlur ~= nil then
 		acrylicBlur = Settings.AcrylicBlur
 	else
@@ -104,18 +383,28 @@ function Nytrix:Window(Settings)
 	notificationsUIPadding.Parent = notifications
 
 	local base = Instance.new("Frame")
-	base.Name = "Base"
-	base.AnchorPoint = Vector2.new(0.5, 0.5)
-	base.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-	base.BackgroundTransparency = Settings.AcrylicBlur and 0.05 or 0
-	base.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	base.BorderSizePixel = 0
-	base.Position = UDim2.fromScale(0.5, 0.5)
-	base.Size = Settings.Size or UDim2.fromOffset(868, 650)
+base.Name = "Base"
+base.AnchorPoint = Vector2.new(0.5, 0.5)
+base.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+base.BackgroundTransparency = Settings.AcrylicBlur and 0.05 or 0
+base.BorderColor3 = Color3.fromRGB(0, 0, 0)
+base.BorderSizePixel = 0
 
+-- Position adjustment for mobile
+if isMobile then
+    base.Position = UDim2.fromScale(0.5, 0.5)
+    base.Size = Settings.Size
+else
+    base.Position = UDim2.fromScale(0.5, 0.5)
+    base.Size = Settings.Size
+end
 	local baseUIScale = Instance.new("UIScale")
 	baseUIScale.Name = "BaseUIScale"
 	baseUIScale.Parent = base
+	-- Add mobile-specific scaling
+if isMobile then
+    baseUIScale.Scale = 0.9 -- Slightly smaller on mobile
+end
 
 	local baseUICorner = Instance.new("UICorner")
 	baseUICorner.Name = "BaseUICorner"
@@ -706,12 +995,95 @@ function Nytrix:Window(Settings)
 	end)
 
 	local topbar = Instance.new("Frame")
-	topbar.Name = "Topbar"
-	topbar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	topbar.BackgroundTransparency = 1
-	topbar.BorderColor3 = Color3.fromRGB(0, 0, 0)
-	topbar.BorderSizePixel = 0
-	topbar.Size = UDim2.new(1, 0, 0, 63)
+topbar.Name = "Topbar"
+topbar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+topbar.BackgroundTransparency = 1
+topbar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+topbar.BorderSizePixel = 0
+topbar.Size = UDim2.new(1, 0, 0, isMobile and 80 or 63) -- Taller on mobile for stats
+
+-- Add user stats frame
+local userStats = Instance.new("Frame")
+userStats.Name = "UserStats"
+userStats.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+userStats.BackgroundTransparency = 1
+userStats.BorderColor3 = Color3.fromRGB(0, 0, 0)
+userStats.BorderSizePixel = 0
+userStats.Size = UDim2.new(0.6, 0, 1, 0)
+
+local userStatsLayout = Instance.new("UIListLayout")
+userStatsLayout.FillDirection = Enum.FillDirection.Vertical
+userStatsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+userStatsLayout.Parent = userStats
+
+-- Get user role and access level
+local userRole, roleDisplay, roleColor = GetPlayerAccessLevel(LocalPlayer)
+local keyTimeRemaining = GetKeyTimeRemaining(LocalPlayer)
+
+-- User ID and Role display
+local userIdLabel = Instance.new("TextLabel")
+userIdLabel.Name = "UserIdLabel"
+userIdLabel.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+userIdLabel.Text = "ID: " .. LocalPlayer.UserId .. " | " .. roleDisplay
+userIdLabel.TextColor3 = roleColor
+userIdLabel.TextSize = isMobile and 10 or 11
+userIdLabel.TextTransparency = 0.3
+userIdLabel.TextXAlignment = Enum.TextXAlignment.Left
+userIdLabel.BackgroundTransparency = 1
+userIdLabel.Size = UDim2.new(1, 0, 0, 16)
+userIdLabel.Parent = userStats
+
+-- Key timer display (if applicable)
+if WhitelistSystem.KeySystem.Enabled and keyTimeRemaining > 0 then
+    local keyTimerLabel = Instance.new("TextLabel")
+    keyTimerLabel.Name = "KeyTimerLabel"
+    keyTimerLabel.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+    keyTimerLabel.Text = "Key: " .. FormatTime(keyTimeRemaining)
+    keyTimerLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    keyTimerLabel.TextSize = isMobile and 9 or 10
+    keyTimerLabel.TextTransparency = 0.4
+    keyTimerLabel.TextXAlignment = Enum.TextXAlignment.Left
+    keyTimerLabel.BackgroundTransparency = 1
+    keyTimerLabel.Size = UDim2.new(1, 0, 0, 14)
+    keyTimerLabel.Parent = userStats
+end
+
+-- Server timer
+local serverTimerLabel = Instance.new("TextLabel")
+serverTimerLabel.Name = "ServerTimerLabel"
+serverTimerLabel.FontFace = Font.new(assets.interFont, Enum.FontWeight.Medium, Enum.FontStyle.Normal)
+serverTimerLabel.Text = "Server: 00:00:00"
+serverTimerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+serverTimerLabel.TextSize = isMobile and 9 or 10
+serverTimerLabel.TextTransparency = 0.4
+serverTimerLabel.TextXAlignment = Enum.TextXAlignment.Left
+serverTimerLabel.BackgroundTransparency = 1
+serverTimerLabel.Size = UDim2.new(1, 0, 0, 14)
+serverTimerLabel.Parent = userStats
+
+userStats.Parent = topbar
+
+-- Update server timer in real-time
+local function UpdateServerTimer()
+    local elapsed = os.time() - serverStartTime
+    serverTimerLabel.Text = "Server: " .. FormatTime(elapsed)
+end
+
+-- Update every second
+local timerConnection = RunService.Heartbeat:Connect(function()
+    UpdateServerTimer()
+    
+    -- Update key timer if applicable
+    if WhitelistSystem.KeySystem.Enabled then
+        local keyTime = GetKeyTimeRemaining(LocalPlayer)
+        if keyTime > 0 then
+            local keyLabel = userStats:FindFirstChild("KeyTimerLabel")
+            if keyLabel then
+                keyLabel.Text = "Key: " .. FormatTime(keyTime)
+            end
+        end
+    end
+end)
 
 	local divider4 = Instance.new("Frame")
 	divider4.Name = "Divider"
@@ -5879,3 +6251,4 @@ end
 
 
 return Nytrix
+
