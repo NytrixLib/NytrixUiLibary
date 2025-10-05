@@ -1,6 +1,12 @@
 local UILibrary = {}
 --// Modules
 
+
+
+--// Mobile Detection
+local IS_MOBILE = game:GetService("UserInputService").TouchEnabled
+
+
 local function getObjGen()
     local objGen = {}
 
