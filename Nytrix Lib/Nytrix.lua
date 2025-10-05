@@ -1,19 +1,19 @@
-local MacLib = { 
+local Nytrix = { 
 	Options = {}, 
-	Folder = "Maclib", 
+	Folder = "Nytrix", 
 	GetService = function(service)
 		return cloneref and cloneref(game:GetService(service)) or game:GetService(service)
 	end
 }
 
 --// Services
-local TweenService = MacLib.GetService("TweenService")
-local RunService = MacLib.GetService("RunService")
-local HttpService = MacLib.GetService("HttpService")
-local ContentProvider = MacLib.GetService("ContentProvider")
-local UserInputService = MacLib.GetService("UserInputService")
-local Lighting = MacLib.GetService("Lighting")
-local Players = MacLib.GetService("Players")
+local TweenService = Nytrix.GetService("TweenService")
+local RunService = Nytrix.GetService("RunService")
+local HttpService = Nytrix.GetService("HttpService")
+local ContentProvider = Nytrix.GetService("ContentProvider")
+local UserInputService = Nytrix.GetService("UserInputService")
+local Lighting = Nytrix.GetService("Lighting")
+local Players = Nytrix.GetService("Players")
 
 --// Variables
 local isStudio = RunService:IsStudio()
@@ -56,7 +56,7 @@ local function GetGui()
 	local parent = RunService:IsStudio() 
 		and LocalPlayer:FindFirstChild("PlayerGui")
 		or (gethui and gethui())
-		or (cloneref and cloneref(MacLib.GetService("CoreGui")) or MacLib.GetService("CoreGui"))
+		or (cloneref and cloneref(Nytrix.GetService("CoreGui")) or Nytrix.GetService("CoreGui"))
 
 	newGui.Parent = parent
 	return newGui
@@ -67,7 +67,7 @@ local function Tween(instance, tweeninfo, propertytable)
 end
 
 --// Library Functions
-function MacLib:Window(Settings)
+function Nytrix:Window(Settings)
 	local WindowFunctions = {Settings = Settings}
 	if Settings.AcrylicBlur ~= nil then
 		acrylicBlur = Settings.AcrylicBlur
@@ -1686,7 +1686,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = ButtonFunctions
+						Nytrix.Options[Flag] = ButtonFunctions
 					end
 					return ButtonFunctions
 				end
@@ -1825,7 +1825,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = ToggleFunctions
+						Nytrix.Options[Flag] = ToggleFunctions
 					end
 					return ToggleFunctions
 				end
@@ -2086,7 +2086,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = SliderFunctions
+						Nytrix.Options[Flag] = SliderFunctions
 					end
 					return SliderFunctions
 				end
@@ -2262,7 +2262,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = InputFunctions
+						Nytrix.Options[Flag] = InputFunctions
 					end
 					return InputFunctions
 				end
@@ -2441,7 +2441,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = KeybindFunctions
+						Nytrix.Options[Flag] = KeybindFunctions
 					end
 
 					return KeybindFunctions
@@ -3013,7 +3013,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = DropdownFunctions
+						Nytrix.Options[Flag] = DropdownFunctions
 					end
 
 					return DropdownFunctions
@@ -4298,7 +4298,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = ColorpickerFunctions
+						Nytrix.Options[Flag] = ColorpickerFunctions
 					end
 					return ColorpickerFunctions
 				end
@@ -4352,7 +4352,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = HeaderFunctions
+						Nytrix.Options[Flag] = HeaderFunctions
 					end
 					return HeaderFunctions
 				end
@@ -4396,7 +4396,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = LabelFunctions
+						Nytrix.Options[Flag] = LabelFunctions
 					end
 					return LabelFunctions
 				end
@@ -4440,7 +4440,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = SubLabelFunctions
+						Nytrix.Options[Flag] = SubLabelFunctions
 					end
 					return SubLabelFunctions
 				end
@@ -4516,7 +4516,7 @@ function MacLib:Window(Settings)
 					end
 
 					if Flag then
-						MacLib.Options[Flag] = ParagraphFunctions
+						Nytrix.Options[Flag] = ParagraphFunctions
 					end
 					return ParagraphFunctions
 				end
@@ -4658,7 +4658,7 @@ function MacLib:Window(Settings)
 					Name = "Select Config",
 					Multi = false,
 					Required = false,
-					Options = MacLib:RefreshConfigList(),
+					Options = Nytrix:RefreshConfigList(),
 					Callback = function(Value)
 						selectedConfig = Value
 					end,
@@ -4675,7 +4675,7 @@ function MacLib:Window(Settings)
 							return
 						end
 
-						local success, returned = MacLib:SaveConfig(inputPath)
+						local success, returned = Nytrix:SaveConfig(inputPath)
 						if not success then
 							WindowFunctions:Notify({
 								Title = "Interface",
@@ -4689,14 +4689,14 @@ function MacLib:Window(Settings)
 						})
 
 						configSelection:ClearOptions()
-						configSelection:InsertOptions(MacLib:RefreshConfigList())
+						configSelection:InsertOptions(Nytrix:RefreshConfigList())
 					end,
 				})
 
 				configSection:Button({
 					Name = "Load Config",
 					Callback = function()
-						local success, returned = MacLib:LoadConfig(configSelection.Value)
+						local success, returned = Nytrix:LoadConfig(configSelection.Value)
 						if not success then
 							WindowFunctions:Notify({
 								Title = "Interface",
@@ -4715,7 +4715,7 @@ function MacLib:Window(Settings)
 				configSection:Button({
 					Name = "Overwrite Config",
 					Callback = function()
-						local success, returned = MacLib:SaveConfig(configSelection.Value)
+						local success, returned = Nytrix:SaveConfig(configSelection.Value)
 						if not success then
 							WindowFunctions:Notify({
 								Title = "Interface",
@@ -4735,7 +4735,7 @@ function MacLib:Window(Settings)
 					Name = "Refresh Config List",
 					Callback = function()
 						configSelection:ClearOptions()
-						configSelection:InsertOptions(MacLib:RefreshConfigList())
+						configSelection:InsertOptions(Nytrix:RefreshConfigList())
 					end,
 				})
 
@@ -4745,7 +4745,7 @@ function MacLib:Window(Settings)
 					Name = "Set as autoload",
 					Callback = function()
 						local name = configSelection.Value
-						writefile(MacLib.Folder .. "/settings/autoload.txt", name)
+						writefile(Nytrix.Folder .. "/settings/autoload.txt", name)
 						autoloadLabel:UpdateName("Autoload config: " .. name)
 						WindowFunctions:Notify({
 							Title = "Interface",
@@ -4756,8 +4756,8 @@ function MacLib:Window(Settings)
 
 				autoloadLabel = configSection:Label({Text = "Autoload config: None"})
 
-				if isfile(MacLib.Folder .. "/settings/autoload.txt") then
-					local name = readfile(MacLib.Folder .. "/settings/autoload.txt")
+				if isfile(Nytrix.Folder .. "/settings/autoload.txt") then
+					local name = readfile(Nytrix.Folder .. "/settings/autoload.txt")
 					autoloadLabel:UpdateName("Autoload config: " .. name)
 				end
 			end
@@ -5381,8 +5381,8 @@ function MacLib:Window(Settings)
 				}
 			end,
 			Load = function(Flag, data)
-				if MacLib.Options[Flag] and data.state then
-					MacLib.Options[Flag]:UpdateState(data.state)
+				if Nytrix.Options[Flag] and data.state then
+					Nytrix.Options[Flag]:UpdateState(data.state)
 				end
 			end
 		},
@@ -5395,8 +5395,8 @@ function MacLib:Window(Settings)
 				}
 			end,
 			Load = function(Flag, data)
-				if MacLib.Options[Flag] and data.value then
-					MacLib.Options[Flag]:UpdateValue(data.value)
+				if Nytrix.Options[Flag] and data.value then
+					Nytrix.Options[Flag]:UpdateValue(data.value)
 				end
 			end
 		},
@@ -5409,8 +5409,8 @@ function MacLib:Window(Settings)
 				}
 			end,
 			Load = function(Flag, data)
-				if MacLib.Options[Flag] and data.text and type(data.text) == "string" then
-					MacLib.Options[Flag]:UpdateText(data.text)
+				if Nytrix.Options[Flag] and data.text and type(data.text) == "string" then
+					Nytrix.Options[Flag]:UpdateText(data.text)
 				end
 			end
 		},
@@ -5423,8 +5423,8 @@ function MacLib:Window(Settings)
 				}
 			end,
 			Load = function(Flag, data)
-				if MacLib.Options[Flag] and data.bind then
-					MacLib.Options[Flag]:Bind(Enum.KeyCode[data.bind])
+				if Nytrix.Options[Flag] and data.bind then
+					Nytrix.Options[Flag]:Bind(Enum.KeyCode[data.bind])
 				end
 			end
 		},
@@ -5437,8 +5437,8 @@ function MacLib:Window(Settings)
 				}
 			end,
 			Load = function(Flag, data)
-				if MacLib.Options[Flag] and data.value then
-					MacLib.Options[Flag]:UpdateSelection(data.value)
+				if Nytrix.Options[Flag] and data.value then
+					Nytrix.Options[Flag]:UpdateSelection(data.value)
 				end
 			end
 		},
@@ -5463,10 +5463,10 @@ function MacLib:Window(Settings)
 					return Color3.new(r, g, b)
 				end
 
-				if MacLib.Options[Flag] and data.color then
-					MacLib.Options[Flag]:SetColor(HexToColor3(data.color)) 
+				if Nytrix.Options[Flag] and data.color then
+					Nytrix.Options[Flag]:SetColor(HexToColor3(data.color)) 
 					if data.alpha then
-						MacLib.Options[Flag]:SetAlpha(data.alpha)
+						Nytrix.Options[Flag]:SetAlpha(data.alpha)
 					end
 				end
 			end
@@ -5477,8 +5477,8 @@ function MacLib:Window(Settings)
 		if isStudio or not (isfolder and makefolder) then return "Config system unavailable." end
 
 		local paths = {
-			MacLib.Folder,
-			MacLib.Folder .. "/settings"
+			Nytrix.Folder,
+			Nytrix.Folder .. "/settings"
 		}
 
 		for i = 1, #paths do
@@ -5489,13 +5489,13 @@ function MacLib:Window(Settings)
 		end
 	end
 
-	function MacLib:LoadAutoLoadConfig()
+	function Nytrix:LoadAutoLoadConfig()
 		if isStudio or not (isfile and readfile) then return "Config system unavailable." end
 
-		if isfile(MacLib.Folder .. "/settings/autoload.txt") then
-			local name = readfile(MacLib.Folder .. "/settings/autoload.txt")
+		if isfile(Nytrix.Folder .. "/settings/autoload.txt") then
+			local name = readfile(Nytrix.Folder .. "/settings/autoload.txt")
 
-			local suc, err = MacLib:LoadConfig(name)
+			local suc, err = Nytrix:LoadConfig(name)
 			if not suc then
 				WindowFunctions:Notify({
 					Title = "Interface",
@@ -5510,27 +5510,27 @@ function MacLib:Window(Settings)
 		end
 	end
 
-	function MacLib:SetFolder(Folder)
+	function Nytrix:SetFolder(Folder)
 		if isStudio then return "Config system unavailable." end
 
-		MacLib.Folder = Folder;
+		Nytrix.Folder = Folder;
 		BuildFolderTree()
 	end
 
-	function MacLib:SaveConfig(Path)
+	function Nytrix:SaveConfig(Path)
 		if isStudio or not writefile then return "Config system unavailable." end
 
 		if (not Path) then
 			return false, "Please select a config file."
 		end
 
-		local fullPath = MacLib.Folder .. "/settings/" .. Path .. ".json"
+		local fullPath = Nytrix.Folder .. "/settings/" .. Path .. ".json"
 
 		local data = {
 			objects = {}
 		}
 
-		for flag, option in next, MacLib.Options do
+		for flag, option in next, Nytrix.Options do
 			if not ClassParser[option.Class] then continue end
 			if option.IgnoreConfig then continue end
 
@@ -5546,14 +5546,14 @@ function MacLib:Window(Settings)
 		return true
 	end
 
-	function MacLib:LoadConfig(Path)
+	function Nytrix:LoadConfig(Path)
 		if isStudio or not (isfile and readfile) then return "Config system unavailable." end
 
 		if (not Path) then
 			return false, "Please select a config file."
 		end
 
-		local file = MacLib.Folder .. "/settings/" .. Path .. ".json"
+		local file = Nytrix.Folder .. "/settings/" .. Path .. ".json"
 		if not isfile(file) then return false, "Invalid file" end
 
 		local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
@@ -5570,10 +5570,10 @@ function MacLib:Window(Settings)
 		return true
 	end
 
-	function MacLib:RefreshConfigList()
+	function Nytrix:RefreshConfigList()
 		if isStudio or not (isfolder and listfiles) then return "Config system unavailable." end
 
-		local list = (isfolder(MacLib.Folder) and isfolder(MacLib.Folder .. "/settings")) and listfiles(MacLib.Folder .. "/settings") or {}
+		local list = (isfolder(Nytrix.Folder) and isfolder(Nytrix.Folder .. "/settings")) and listfiles(Nytrix.Folder .. "/settings") or {}
 
 		local out = {}
 		for i = 1, #list do
@@ -5614,9 +5614,9 @@ function MacLib:Window(Settings)
 	return WindowFunctions
 end
 
-function MacLib:Demo()
-	local Window = MacLib:Window({
-		Title = "Maclib Demo",
+function Nytrix:Demo()
+	local Window = Nytrix:Window({
+		Title = "Nytrix Demo",
 		Subtitle = "This is a subtitle.",
 		Size = UDim2.fromOffset(868, 650),
 		DragStyle = 1,
@@ -5866,7 +5866,7 @@ function MacLib:Demo()
 		Text = "Sub-Label. Lorem ipsum odor amet, consectetuer adipiscing elit."
 	})
 
-	MacLib:SetFolder("Maclib")
+	Nytrix:SetFolder("Nytrix")
 	tabs.Settings:InsertConfigSection("Left")
 
 	Window.onUnloaded(function()
@@ -5874,7 +5874,8 @@ function MacLib:Demo()
 	end)
 
 	tabs.Main:Select()
-	MacLib:LoadAutoLoadConfig()
+	Nytrix:LoadAutoLoadConfig()
 end
 
-return MacLib
+
+return Nytrix
